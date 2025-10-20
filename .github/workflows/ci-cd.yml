@@ -1,0 +1,125 @@
+name: Build and Deploy Frontend + Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    name: Build images and push to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push frontend image
+        run: |
+          docker build -f Dockerfile.frontend -t ${{ secrets.DOCKER_USER }}/webbiblbioteca-frontend:latest .
+          docker push ${{ secrets.DOCKER_USER }}/webbiblbioteca-frontend:latest
+
+      - name: Build and push backend image
+        run: |
+          docker build -f Dockerfile.backend -t ${{ secrets.DOCKER_USER }}/webbiblbioteca-backend:latest .
+          docker push ${{ secrets.DOCKER_USER }}/webbiblbioteca-backend:latest
+
+  deploy-frontend:
+    name: Deploy frontend to VM_FRONTEND
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Copy deploy files to frontend VM
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.FRONT_SSH_HOST }}
+          username: ${{ secrets.FRONT_SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_FRONT }}
+          source: "setup_vm.sh,docker-compose.frontend.yml"
+          target: "/home/${{ secrets.FRONT_SSH_USER }}/deploy"
+
+      - name: Run setup and docker-compose on frontend VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.FRONT_SSH_HOST }}
+          username: ${{ secrets.FRONT_SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_FRONT }}
+          script: |
+            DEPLOY_PATH="/home/${{ secrets.FRONT_SSH_USER }}/deploy"
+            chmod +x $DEPLOY_PATH/setup_vm.sh
+            $DEPLOY_PATH/setup_vm.sh ${{ secrets.FRONT_SSH_USER }}
+
+            cd $DEPLOY_PATH
+            export DOCKER_USER="${{ secrets.DOCKER_USER }}"
+            export DOCKER_PASSWORD="${{ secrets.DOCKER_PASSWORD }}"
+
+            echo "$DOCKER_PASSWORD" | sudo docker login -u "$DOCKER_USER" --password-stdin
+            sudo docker-compose -f docker-compose.frontend.yml pull || true
+            sudo docker-compose -f docker-compose.frontend.yml up -d --force-recreate
+            sudo docker logout
+
+      - name: Notify frontend deploy by email
+        uses: dawidd6/action-send-mail@v6
+        with:
+          connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
+          subject: "Frontend desplegado ✅"
+          body: "Frontend desplegado correctamente en: http://${{ secrets.FRONT_SSH_HOST }}/"
+          to: molinafranz943@gmail.com
+          from: ${{ secrets.EMAIL_USER }}
+
+  deploy-backend:
+    name: Deploy backend to VM_BACKEND
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Copy deploy files to backend VM
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.BACK_SSH_HOST }}
+          username: ${{ secrets.BACK_SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_BACK }}
+          source: "setup_vm.sh,docker-compose.backend.yml"
+          target: "/home/${{ secrets.BACK_SSH_USER }}/deploy"
+
+      - name: Run setup and docker-compose on backend VM
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.BACK_SSH_HOST }}
+          username: ${{ secrets.BACK_SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY_BACK }}
+          script: |
+            DEPLOY_PATH="/home/${{ secrets.BACK_SSH_USER }}/deploy"
+            chmod +x $DEPLOY_PATH/setup_vm.sh
+            $DEPLOY_PATH/setup_vm.sh ${{ secrets.BACK_SSH_USER }}
+
+            cd $DEPLOY_PATH
+            export DOCKER_USER="${{ secrets.DOCKER_USER }}"
+            export DOCKER_PASSWORD="${{ secrets.DOCKER_PASSWORD }}"
+
+            echo "$DOCKER_PASSWORD" | sudo docker login -u "$DOCKER_USER" --password-stdin
+            sudo docker-compose -f docker-compose.backend.yml pull || true
+            sudo docker-compose -f docker-compose.backend.yml up -d --force-recreate
+            sudo docker logout
+
+      - name: Notify backend deploy by email
+        uses: dawidd6/action-send-mail@v6
+        with:
+          connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
+          subject: "Backend desplegado ✅"
+          body: "Backend desplegado correctamente en: http://${{ secrets.BACK_SSH_HOST }}:3000/"
+          to: molinafranz943@gmail.com
+          from: ${{ secrets.EMAIL_USER }}

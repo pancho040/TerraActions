@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  frontend:
+    image: ${DOCKER_USER}/webbiblbioteca-frontend:latest
+    container_name: webbiblbioteca-frontend
+    ports:
+      - "80:80"
+    restart: always
