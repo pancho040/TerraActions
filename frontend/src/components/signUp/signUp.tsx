@@ -3,10 +3,10 @@ import type { SignUpData } from "../../services/SignUpService";
 import { signUpService } from "../../services/SignUpService";
 import Button from "../ui/button/Button";
 import Input from "../ui/input/Input";
-import './signUp.css';
+import "./signUp.css";
 import { NavBar } from "../navBar/navBar";
 import logazo from "../../assets/logazo.png";
-import { faHome, faBook, faUser, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faBook, faUser, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 
 const SignUp: React.FC = () => {
   const [formData, setFormData] = useState<SignUpData>({
@@ -20,12 +20,12 @@ const SignUp: React.FC = () => {
     usuario: "",
     password: "",
   });
-  
+
   const navItems = [
-    { id: '1', label: 'Inicio', href: '/', icon: faHome },
-    { id: '2', label: 'Catálogo', href: '/catalogo', icon: faBook },
-    { id: '4', label: 'Registrarse', href: '/signUp', icon: faUser },
-    { id: '5', label: 'Iniciar Sesion', href: '/login', icon: faInfoCircle },
+    { id: "1", label: "Inicio", href: "/", icon: faHome },
+    { id: "2", label: "Catálogo", href: "/catalogo", icon: faBook },
+    { id: "4", label: "Registrarse", href: "/signUp", icon: faUser },
+    { id: "5", label: "Iniciar Sesion", href: "/login", icon: faInfoCircle },
   ];
 
   const [loading, setLoading] = useState(false);
@@ -33,11 +33,11 @@ const SignUp: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (field: keyof SignUpData) => (
-    value: string | boolean | number | Date
+    value: string | boolean | number | File | Date
   ) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: String(value),
     }));
     setMessage(null);
     setError(null);
@@ -72,16 +72,12 @@ const SignUp: React.FC = () => {
 
   return (
     <>
-      <NavBar
-        items={navItems}
-        logo={logazo}
-        logoAlt="Logo de la aplicacion">
-      </NavBar>
+      <NavBar items={navItems} logo={logazo} logoAlt="Logo de la aplicacion"></NavBar>
       <div className="signUp-container">
         <form onSubmit={handleSubmit} className="signup-form">
           <h2>Registro de Usuario</h2>
           <div className="title-underline"></div>
-          
+
           <div className="inputs-grid">
             <div>
               <Input
@@ -91,14 +87,14 @@ const SignUp: React.FC = () => {
                 handleInput={handleInputChange("nombre")}
                 resetMessage={() => {}}
               />
-                <Input
-            placeholder="CI Cliente"
-            type="text"
-            value={formData.ci_cliente}
-            handleInput={handleInputChange("ci_cliente")}
-            resetMessage={() => {}}
-          />
-             
+              <Input
+                placeholder="CI Cliente"
+                type="text"
+                value={formData.ci_cliente}
+                handleInput={handleInputChange("ci_cliente")}
+                resetMessage={() => {}}
+              />
+
               <Input
                 placeholder="Dirección"
                 type="text"
@@ -145,14 +141,13 @@ const SignUp: React.FC = () => {
               />
             </div>
           </div>
-           <Input
-                placeholder="Email"
-                type="email"
-                value={formData.email}
-                handleInput={handleInputChange("email")}
-                resetMessage={() => {}}
-              />
-        
+          <Input
+            placeholder="Email"
+            type="email"
+            value={formData.email}
+            handleInput={handleInputChange("email")}
+            resetMessage={() => {}}
+          />
 
           <Button handleClick={() => {}} disabled={loading}>
             {loading ? "Creando..." : "Crear Cuenta"}
