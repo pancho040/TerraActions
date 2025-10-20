@@ -2,18 +2,14 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copiar package files
 COPY package*.json ./
 RUN npm ci
 
-# Copiar código fuente
 COPY . .
 
-# ⭐ ARG para recibir la URL del backend
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
-# Build
 RUN npm run build
 
 # Production stage
