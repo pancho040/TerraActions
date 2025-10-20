@@ -24,7 +24,9 @@ jobs:
 
       - name: Build and push frontend image
         run: |
-          docker build -f Dockerfile.frontend -t ${{ secrets.DOCKER_USER }}/webbiblbioteca-frontend:latest .
+          docker build -f Dockerfile.frontend \
+            --build-arg VITE_API_BASE_URL=http://${{ secrets.BACK_SSH_HOST }}:5000/api \
+            -t ${{ secrets.DOCKER_USER }}/webbiblbioteca-frontend:latest .
           docker push ${{ secrets.DOCKER_USER }}/webbiblbioteca-frontend:latest
 
       - name: Build and push backend image
@@ -46,7 +48,7 @@ jobs:
           host: ${{ secrets.BACK_SSH_HOST }}
           username: ${{ secrets.BACK_SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY_BACK }}
-          source: "setup_vm.sh,docker-compose.backend.yml,check_ports.sh"  # ⭐ Agregado
+          source: "setup_vm.sh,docker-compose.backend.yml,check_ports.sh"
           target: "/home/${{ secrets.BACK_SSH_USER }}/deploy"
 
       - name: Run setup and docker-compose on backend VM
@@ -58,14 +60,12 @@ jobs:
           script: |
             DEPLOY_PATH="/home/${{ secrets.BACK_SSH_USER }}/deploy"
             chmod +x $DEPLOY_PATH/setup_vm.sh
-            chmod +x $DEPLOY_PATH/check_ports.sh  # ⭐ Agregado
+            chmod +x $DEPLOY_PATH/check_ports.sh
             
-            # Pasar "backend" como segundo argumento
             $DEPLOY_PATH/setup_vm.sh ${{ secrets.BACK_SSH_USER }} backend
 
             cd $DEPLOY_PATH
             
-            # Crear archivo .env para docker-compose
             cat > .env << EOF
             DOCKER_USER=${{ secrets.DOCKER_USER }}
             PORT=5000
@@ -81,7 +81,6 @@ jobs:
             sudo docker-compose -f docker-compose.backend.yml up -d --force-recreate
             sudo docker logout
             
-            # ⭐ Verificar estado (agregado al final)
             echo ""
             echo "========================================"
             echo "    VERIFICACIÓN DE DESPLIEGUE BACKEND"
@@ -93,10 +92,9 @@ jobs:
         with:
           connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
           subject: "Backend desplegado ✅"
-          body: "Backend desplegado correctamente en: http://${{ secrets.BACK_SSH_HOST }}:3000/api"
+          body: "Backend desplegado correctamente en: http://${{ secrets.BACK_SSH_HOST }}:5000/api"
           to: molinafranz943@gmail.com
           from: ${{ secrets.EMAIL_USER }}
-
 
   deploy-frontend:
     name: Deploy frontend to VM_FRONTEND
@@ -112,7 +110,7 @@ jobs:
           host: ${{ secrets.FRONT_SSH_HOST }}
           username: ${{ secrets.FRONT_SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY_FRONT }}
-          source: "setup_vm.sh,docker-compose.frontend.yml,check_ports.sh"  # ⭐ Agregado
+          source: "setup_vm.sh,docker-compose.frontend.yml,check_ports.sh"
           target: "/home/${{ secrets.FRONT_SSH_USER }}/deploy"
 
       - name: Run setup and docker-compose on frontend VM
@@ -124,14 +122,12 @@ jobs:
           script: |
             DEPLOY_PATH="/home/${{ secrets.FRONT_SSH_USER }}/deploy"
             chmod +x $DEPLOY_PATH/setup_vm.sh
-            chmod +x $DEPLOY_PATH/check_ports.sh  # ⭐ Agregado
+            chmod +x $DEPLOY_PATH/check_ports.sh
             
-            # Pasar "frontend" como segundo argumento
             $DEPLOY_PATH/setup_vm.sh ${{ secrets.FRONT_SSH_USER }} frontend
 
             cd $DEPLOY_PATH
             
-            # Crear archivo .env para docker-compose
             cat > .env << EOF
             DOCKER_USER=${{ secrets.DOCKER_USER }}
             BACK_SSH_HOST=${{ secrets.BACK_SSH_HOST }}
@@ -142,7 +138,6 @@ jobs:
             sudo docker-compose -f docker-compose.frontend.yml up -d --force-recreate
             sudo docker logout
             
-            # ⭐ Verificar estado (agregado al final)
             echo ""
             echo "========================================="
             echo "    VERIFICACIÓN DE DESPLIEGUE FRONTEND"

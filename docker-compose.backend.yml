@@ -1,15 +1,23 @@
 version: '3.8'
+
 services:
   backend:
     image: ${DOCKER_USER}/webbiblbioteca-backend:latest
     container_name: webbiblbioteca-backend
     ports:
-      - "3000:5000"  # Mapea puerto 3000 externo al 5000 interno
+      - "5000:5000"  # ⭐ Cambiado: ahora el puerto externo también es 5000
     environment:
       - PORT=5000
       - NODE_ENV=production
       - FRONTEND_URL=http://${FRONT_SSH_HOST}
+      - FRONT_SSH_HOST=${FRONT_SSH_HOST}  # ⭐ Agregado
       - SUPA_BASE_URL=${SUPA_BASE_URL}
       - SUPA_ANON_KEY=${SUPA_ANON_KEY}
       - JWT_SECRET=${JWT_SECRET}
     restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
