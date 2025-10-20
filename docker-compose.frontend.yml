@@ -5,4 +5,6 @@ services:
     container_name: webbiblbioteca-frontend
     ports:
       - "80:80"
+    environment:
+      - VITE_API_URL=http://${BACK_SSH_HOST}:3000
     restart: always
