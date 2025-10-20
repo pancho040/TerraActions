@@ -14,7 +14,10 @@ RUN npm ci
 # Copiamos el resto del backend
 COPY backend/ ./
 
-# Compilar TypeScript usando npx (no requiere instalación global)
+# Asegurar permisos de ejecución para tsc
+RUN chmod +x ./node_modules/.bin/tsc
+
+# Compilar TypeScript usando npx
 RUN npx tsc
 
 # Exponemos el puerto del backend
