@@ -48,7 +48,7 @@ jobs:
           host: ${{ secrets.BACK_SSH_HOST }}
           username: ${{ secrets.BACK_SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY_BACK }}
-          source: "setup_vm.sh,docker-compose.backend.yml,check_ports.sh"
+          source: "setup_vm.sh,docker-compose.backend.yml,check_ports.sh,open_ports.sh"
           target: "/home/${{ secrets.BACK_SSH_USER }}/deploy"
 
       - name: Run setup and docker-compose on backend VM
