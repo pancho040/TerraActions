@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const MultaController_1 = require("../Controllers/MultaController");
+const multaRouter = (0, express_1.Router)();
+multaRouter.get("/", MultaController_1.MultaController.getMulta);
+multaRouter.get("/:id", MultaController_1.MultaController.getMultaById);
+multaRouter.post("/", MultaController_1.MultaController.createMulta);
+multaRouter.put("/:id", MultaController_1.MultaController.updateMulta);
+multaRouter.delete("/:id", MultaController_1.MultaController.deleteMulta);
+exports.default = multaRouter;

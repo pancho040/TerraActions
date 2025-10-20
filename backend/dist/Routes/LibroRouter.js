@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const LibroController_1 = require("../Controllers/LibroController");
+const express_1 = require("express");
+const libroRouter = (0, express_1.Router)();
+libroRouter.get("/", LibroController_1.LibroController.getLibro);
+libroRouter.get("/id/:id", LibroController_1.LibroController.getLibroId);
+libroRouter.get("/titulo/:titulo", LibroController_1.LibroController.getLibroPorTitulo);
+libroRouter.get("/genero/:genero", LibroController_1.LibroController.getLibroPorGenero);
+exports.default = libroRouter;

@@ -9,9 +9,9 @@ import authRouter from '../Routes/authRouter';
 import libroRouter from '../Routes/LibroRouter';
 import administradorRouter from '../Routes/AdministradorRouter';
 import clienteRouter from '../Routes/ClienteRouter';
-import stockRouter from '../Routes/StockRouter';  
+import stockRouter from '../Routes/StockRouter';
 import signUpRouter from '../Routes/signUpRouter';
-import libroAutorRouter from '../Routes/LibroAutorRouter';
+import libroAutorRouter from '../Routes/LibroAutorRouter'; 
 
 dotenv.config();
 

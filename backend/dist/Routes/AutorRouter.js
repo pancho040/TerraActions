@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const AutorController_1 = require("../Controllers/AutorController");
+const autorRouter = (0, express_1.Router)();
+autorRouter.get("/", AutorController_1.AutorController.getAutor);
+autorRouter.get("/:id", AutorController_1.AutorController.getAutorById);
+autorRouter.get("/nombre/:nombre", AutorController_1.AutorController.getPorNombre);
+autorRouter.post("/", AutorController_1.AutorController.createAutor);
+autorRouter.put("/:id", AutorController_1.AutorController.updateAutor);
+autorRouter.delete("/:id", AutorController_1.AutorController.deleteAutor);
+exports.default = autorRouter;
