@@ -18,16 +18,16 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
-// ⭐ CORS CONFIGURADO - Permite localhost y el frontend en producción
+// CORS CONFIGURADO
 app.use(cors({
   origin: [
-    'http://localhost:5173',  // Vite dev
-    'http://localhost:5174',  // Vite dev alternativo
-    'http://127.0.0.1:5173',  // localhost alternativo
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
     process.env.FRONT_SSH_HOST ? `http://${process.env.FRONT_SSH_HOST}` : '',
     process.env.FRONT_SSH_HOST ? `https://${process.env.FRONT_SSH_HOST}` : '',
     process.env.FRONTEND_URL || ''
-  ].filter(Boolean), // Elimina strings vacíos
+  ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -37,7 +37,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Log de peticiones (útil para debug)
+// Log de peticiones
 app.use((req, _res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
