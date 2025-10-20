@@ -46,7 +46,7 @@ jobs:
           host: ${{ secrets.BACK_SSH_HOST }}
           username: ${{ secrets.BACK_SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY_BACK }}
-          source: "setup_vm.sh,docker-compose.backend.yml"
+          source: "setup_vm.sh,docker-compose.backend.yml,check_ports.sh"  # ⭐ Agregado
           target: "/home/${{ secrets.BACK_SSH_USER }}/deploy"
 
       - name: Run setup and docker-compose on backend VM
@@ -58,7 +58,10 @@ jobs:
           script: |
             DEPLOY_PATH="/home/${{ secrets.BACK_SSH_USER }}/deploy"
             chmod +x $DEPLOY_PATH/setup_vm.sh
-            $DEPLOY_PATH/setup_vm.sh ${{ secrets.BACK_SSH_USER }}
+            chmod +x $DEPLOY_PATH/check_ports.sh  # ⭐ Agregado
+            
+            # Pasar "backend" como segundo argumento
+            $DEPLOY_PATH/setup_vm.sh ${{ secrets.BACK_SSH_USER }} backend
 
             cd $DEPLOY_PATH
             
@@ -77,15 +80,23 @@ jobs:
             sudo docker-compose -f docker-compose.backend.yml pull
             sudo docker-compose -f docker-compose.backend.yml up -d --force-recreate
             sudo docker logout
+            
+            # ⭐ Verificar estado (agregado al final)
+            echo ""
+            echo "========================================"
+            echo "    VERIFICACIÓN DE DESPLIEGUE BACKEND"
+            echo "========================================"
+            $DEPLOY_PATH/check_ports.sh
 
       - name: Notify backend deploy by email
         uses: dawidd6/action-send-mail@v6
         with:
           connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
           subject: "Backend desplegado ✅"
-          body: "Backend desplegado correctamente en: http://${{ secrets.BACK_SSH_HOST }}:3000/"
+          body: "Backend desplegado correctamente en: http://${{ secrets.BACK_SSH_HOST }}:3000/api"
           to: molinafranz943@gmail.com
           from: ${{ secrets.EMAIL_USER }}
+
 
   deploy-frontend:
     name: Deploy frontend to VM_FRONTEND
@@ -101,7 +112,7 @@ jobs:
           host: ${{ secrets.FRONT_SSH_HOST }}
           username: ${{ secrets.FRONT_SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY_FRONT }}
-          source: "setup_vm.sh,docker-compose.frontend.yml"
+          source: "setup_vm.sh,docker-compose.frontend.yml,check_ports.sh"  # ⭐ Agregado
           target: "/home/${{ secrets.FRONT_SSH_USER }}/deploy"
 
       - name: Run setup and docker-compose on frontend VM
@@ -113,7 +124,10 @@ jobs:
           script: |
             DEPLOY_PATH="/home/${{ secrets.FRONT_SSH_USER }}/deploy"
             chmod +x $DEPLOY_PATH/setup_vm.sh
-            $DEPLOY_PATH/setup_vm.sh ${{ secrets.FRONT_SSH_USER }}
+            chmod +x $DEPLOY_PATH/check_ports.sh  # ⭐ Agregado
+            
+            # Pasar "frontend" como segundo argumento
+            $DEPLOY_PATH/setup_vm.sh ${{ secrets.FRONT_SSH_USER }} frontend
 
             cd $DEPLOY_PATH
             
@@ -127,12 +141,66 @@ jobs:
             sudo docker-compose -f docker-compose.frontend.yml pull
             sudo docker-compose -f docker-compose.frontend.yml up -d --force-recreate
             sudo docker logout
+            
+            # ⭐ Verificar estado (agregado al final)
+            echo ""
+            echo "========================================="
+            echo "    VERIFICACIÓN DE DESPLIEGUE FRONTEND"
+            echo "========================================="
+            $DEPLOY_PATH/check_ports.sh
 
       - name: Notify frontend deploy by email
         uses: dawidd6/action-send-mail@v6
         with:
           connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
           subject: "Frontend desplegado ✅"
-          body: "Frontend desplegado correctamente en: http://${{ secrets.FRONT_SSH_HOST }}/"
+          body: "Frontend desplegado correctamente en: http://${{ secrets.FRONT_SSH_HOST }}"
           to: molinafranz943@gmail.com
           from: ${{ secrets.EMAIL_USER }}
+```
+
+## 📁 Estructura final de archivos
+
+Tu proyecto debería verse así:
+```
+proyecto/
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml                    ⭐ Actualizado
+├── frontend/
+├── backend/
+├── setup_vm.sh                          ⭐ Actualizado con argumento VM_TYPE
+├── check_ports.sh                       ⭐ NUEVO archivo
+├── docker-compose.frontend.yml
+├── docker-compose.backend.yml
+├── Dockerfile.frontend
+└── Dockerfile.backend
+```
+
+## 🎯 ¿Qué hace este script?
+
+Cuando ejecutes el deployment, verás en los logs de GitHub Actions:
+```
+========================================
+    VERIFICACIÓN DE DESPLIEGUE BACKEND
+========================================
+
+=== Verificación de puertos ===
+
+Puertos abiertos en UFW:
+Status: active
+     To                         Action      From
+     --                         ------      ----
+[ 1] 22/tcp                     ALLOW IN    Anywhere
+[ 2] 3000/tcp                   ALLOW IN    Anywhere
+
+Puertos en escucha:
+tcp   0.0.0.0:3000    0.0.0.0:*    LISTEN   1234/docker-proxy
+tcp   0.0.0.0:22      0.0.0.0:*    LISTEN   567/sshd
+
+Contenedores Docker:
+NAMES                       STATUS          PORTS
+webbiblbioteca-backend     Up 2 seconds    0.0.0.0:3000->5000/tcp
+
+Logs recientes del contenedor:
+Servidor corriendo en http://localhost:5000
