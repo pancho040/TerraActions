@@ -61,31 +61,53 @@ jobs:
             DEPLOY_PATH="/home/${{ secrets.BACK_SSH_USER }}/deploy"
             chmod +x $DEPLOY_PATH/setup_vm.sh
             chmod +x $DEPLOY_PATH/check_ports.sh
+            chmod +x $DEPLOY_PATH/open_ports.sh
             
+            # Ejecutar setup con apertura de puertos
             $DEPLOY_PATH/setup_vm.sh ${{ secrets.BACK_SSH_USER }} backend
 
             cd $DEPLOY_PATH
             
+            # Crear archivo .env
             cat > .env << EOF
             DOCKER_USER=${{ secrets.DOCKER_USER }}
             PORT=5000
             NODE_ENV=production
             FRONT_SSH_HOST=${{ secrets.FRONT_SSH_HOST }}
+            FRONTEND_URL=http://${{ secrets.FRONT_SSH_HOST }}
             SUPA_BASE_URL=${{ secrets.SUPA_BASE_URL }}
             SUPA_ANON_KEY=${{ secrets.SUPA_ANON_KEY }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             EOF
 
+            # Login y deploy
             echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+            sudo docker-compose -f docker-compose.backend.yml down || true
             sudo docker-compose -f docker-compose.backend.yml pull
             sudo docker-compose -f docker-compose.backend.yml up -d --force-recreate
             sudo docker logout
             
+            # Esperar a que el contenedor inicie
+            echo "⏳ Esperando 10 segundos para que el backend inicie..."
+            sleep 10
+            
+            # Verificar estado
             echo ""
             echo "========================================"
             echo "    VERIFICACIÓN DE DESPLIEGUE BACKEND"
             echo "========================================"
+            echo ""
+            echo "📦 Estado del contenedor:"
+            sudo docker ps -a | grep backend || echo "No se encontró contenedor backend"
+            echo ""
+            echo "📝 Últimos logs del backend:"
+            sudo docker logs --tail 50 webbiblbioteca-backend || echo "No se pudieron obtener logs"
+            echo ""
+            echo "🔍 Verificando puertos:"
             $DEPLOY_PATH/check_ports.sh
+            echo ""
+            echo "🌐 Prueba de conectividad:"
+            curl -f http://localhost:5000/api/health || echo "❌ No se pudo conectar al backend localmente"
 
       - name: Notify backend deploy by email
         uses: dawidd6/action-send-mail@v6
@@ -110,7 +132,7 @@ jobs:
           host: ${{ secrets.FRONT_SSH_HOST }}
           username: ${{ secrets.FRONT_SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY_FRONT }}
-          source: "setup_vm.sh,docker-compose.frontend.yml,check_ports.sh"
+          source: "setup_vm.sh,docker-compose.frontend.yml,check_ports.sh,open_ports.sh"
           target: "/home/${{ secrets.FRONT_SSH_USER }}/deploy"
 
       - name: Run setup and docker-compose on frontend VM
@@ -123,25 +145,43 @@ jobs:
             DEPLOY_PATH="/home/${{ secrets.FRONT_SSH_USER }}/deploy"
             chmod +x $DEPLOY_PATH/setup_vm.sh
             chmod +x $DEPLOY_PATH/check_ports.sh
+            chmod +x $DEPLOY_PATH/open_ports.sh
             
+            # Ejecutar setup
             $DEPLOY_PATH/setup_vm.sh ${{ secrets.FRONT_SSH_USER }} frontend
 
             cd $DEPLOY_PATH
             
+            # Crear archivo .env
             cat > .env << EOF
             DOCKER_USER=${{ secrets.DOCKER_USER }}
             BACK_SSH_HOST=${{ secrets.BACK_SSH_HOST }}
             EOF
 
+            # Login y deploy
             echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+            sudo docker-compose -f docker-compose.frontend.yml down || true
             sudo docker-compose -f docker-compose.frontend.yml pull
             sudo docker-compose -f docker-compose.frontend.yml up -d --force-recreate
             sudo docker logout
             
+            # Esperar a que el contenedor inicie
+            echo "⏳ Esperando 10 segundos para que el frontend inicie..."
+            sleep 10
+            
+            # Verificar estado
             echo ""
             echo "========================================="
             echo "    VERIFICACIÓN DE DESPLIEGUE FRONTEND"
             echo "========================================="
+            echo ""
+            echo "📦 Estado del contenedor:"
+            sudo docker ps -a | grep frontend || echo "No se encontró contenedor frontend"
+            echo ""
+            echo "📝 Últimos logs del frontend:"
+            sudo docker logs --tail 30 webbiblbioteca-frontend || echo "No se pudieron obtener logs"
+            echo ""
+            echo "🔍 Verificando puertos:"
             $DEPLOY_PATH/check_ports.sh
 
       - name: Notify frontend deploy by email
