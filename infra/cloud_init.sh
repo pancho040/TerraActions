@@ -1,234 +1,99 @@
 #!/bin/bash
+# Cloud-init para WebBibliotecaTerra: Docker + Docker Compose para Backend y Frontend
+# Ubuntu 22.04
 
-# Cloud Init Script para WebBibliotecaTerra - Single VM
-# Configura una VM con ambos contenedores (frontend y backend)
+# -----------------------------
+# 1. Actualizar paquetes base
+# -----------------------------
+sudo apt-get update -y
+sudo apt-get upgrade -y
 
-set -e
+# -----------------------------
+# 2. Instalar Docker
+# -----------------------------
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-echo "🚀 Iniciando configuración de WebBibliotecaTerra..."
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Actualizar sistema
-apt-get update -qq
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Instalar Docker
-echo "🐳 Instalando Docker..."
-apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt-get update -qq
-apt-get install -y docker-ce docker-ce-cli containerd.io
+# -----------------------------
+# 3. Añadir usuario 'ubuntu' al grupo docker
+# -----------------------------
+if id -u ubuntu >/dev/null 2>&1; then
+    sudo usermod -aG docker ubuntu
+fi
 
-# Instalar Docker Compose
-echo "🐳 Instalando Docker Compose..."
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
+# -----------------------------
+# 4. Habilitar y arrancar Docker
+# -----------------------------
+sudo systemctl enable docker
+sudo systemctl start docker
 
-# Agregar usuario ubuntu al grupo docker
-usermod -aG docker ubuntu
+# -----------------------------
+# 5. Crear carpeta para la app
+# -----------------------------
+sudo mkdir -p /opt/webbibliotecaterra
+sudo chown ubuntu:ubuntu /opt/webbibliotecaterra
 
-# Asegurar que Docker esté corriendo
-systemctl enable docker
-systemctl start docker
-
-# Configurar firewall
-echo "🔥 Configurando firewall..."
-
-# Instalar iptables-persistent
-DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent
-
-# Configurar reglas básicas de iptables
-iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-iptables -A INPUT -i lo -j ACCEPT
-iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-
-# Abrir puertos para frontend y backend
-iptables -A INPUT -p tcp --dport 80 -j ACCEPT    # Frontend
-iptables -A INPUT -p tcp --dport 5000 -j ACCEPT  # Backend
-
-# Eliminar regla de REJECT de Oracle Cloud si existe
-iptables -D INPUT -j REJECT --reject-with icmp-host-prohibited 2>/dev/null || true
-
-# Guardar reglas de firewall
-netfilter-persistent save
-
-# Crear directorio para la aplicación
-mkdir -p /opt/webbibliotecaterra
-cd /opt/webbibliotecaterra
-
-# Crear archivo docker-compose.yml
-cat > docker-compose.yml << 'DOCKERCOMPOSE_EOF'
-version: '3.8'
+# -----------------------------
+# 6. Configurar Docker Compose
+# -----------------------------
+cat > /opt/webbibliotecaterra/docker-compose.yml <<'EOF'
+version: "3.9"
 
 services:
   backend:
-    image: ${DOCKER_USER}/webbiblbioteca-backend:latest
-    container_name: webbiblbioteca-backend
+    image: tu_usuario_dockerhub/backend:latest
+    container_name: webbiblioteca_backend
+    restart: always
     ports:
       - "5000:5000"
     environment:
-      - PORT=5000
       - NODE_ENV=production
-      - FRONTEND_URL=http://localhost:80
-      - SUPA_BASE_URL=${SUPA_BASE_URL}
-      - SUPA_ANON_KEY=${SUPA_ANON_KEY}
-      - JWT_SECRET=${JWT_SECRET}
-    restart: always
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      # Agrega aquí tus variables de entorno del backend
 
   frontend:
-    image: ${DOCKER_USER}/webbiblbioteca-frontend:latest
-    container_name: webbiblbioteca-frontend
-    ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://localhost:5000
+    image: tu_usuario_dockerhub/frontend:latest
+    container_name: webbiblioteca_frontend
     restart: always
-    depends_on:
-      - backend
-DOCKERCOMPOSE_EOF
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      # Agrega aquí tus variables de entorno del frontend
+EOF
 
-# Crear script de despliegue
-cat > deploy.sh << 'DEPLOY_EOF'
-#!/bin/bash
+# -----------------------------
+# 7. Levantar contenedores al iniciar la VM
+# -----------------------------
+sudo chown ubuntu:ubuntu /opt/webbibliotecaterra/docker-compose.yml
+sudo bash -c "cat > /etc/systemd/system/webbibliotecaterra.service <<'EOL'
+[Unit]
+Description=WebBibliotecaTerra Docker Compose Service
+After=network.target docker.service
+Requires=docker.service
 
-# Script de despliegue para WebBibliotecaTerra
-set -e
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/webbibliotecaterra
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=0
 
-echo "🚀 Desplegando WebBibliotecaTerra..."
+[Install]
+WantedBy=multi-user.target
+EOL"
 
-cd /opt/webbibliotecaterra
+sudo systemctl daemon-reexec
+sudo systemctl enable webbibliotecaterra.service
+sudo systemctl start webbibliotecaterra.service
 
-# Crear archivo .env si no existe
-if [ ! -f .env ]; then
-    echo "⚠️  Creando archivo .env desde variables de entorno..."
-    cat > .env << ENV_EOF
-DOCKER_USER=\${DOCKER_USER}
-SUPA_BASE_URL=\${SUPA_BASE_URL}
-SUPA_ANON_KEY=\${SUPA_ANON_KEY}
-JWT_SECRET=\${JWT_SECRET}
-ENV_EOF
-fi
-
-# Limpiar contenedores antiguos
-echo "🧹 Limpiando contenedores antiguos..."
-docker-compose down || true
-
-# Pull de las imágenes más recientes
-echo "📥 Descargando imágenes más recientes..."
-docker-compose pull
-
-# Levantar los servicios
-echo "🐳 Iniciando contenedores..."
-docker-compose up -d
-
-# Esperar a que los servicios estén listos
-echo "⏳ Esperando a que los servicios estén listos..."
-sleep 30
-
-# Verificar estado
-echo "📊 Estado de los contenedores:"
-docker-compose ps
-
-echo "✅ Despliegue completado!"
-echo "🌐 Frontend disponible en: http://\$(curl -s ifconfig.me)"
-echo "🔧 Backend disponible en: http://\$(curl -s ifconfig.me):5000"
-DEPLOY_EOF
-
-chmod +x deploy.sh
-
-# Crear script de verificación
-cat > check_ports.sh << 'CHECK_EOF'
-#!/bin/bash
-
-# Script para verificar puertos y conectividad - Single VM
-
-echo "🔍 Verificando configuración de WebBibliotecaTerra..."
-echo ""
-
-# Mostrar IP pública
-PUBLIC_IP=\$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "No disponible")
-echo "🌐 IP Pública: \$PUBLIC_IP"
-echo ""
-
-# Verificar puertos en escucha
-echo "👂 Puertos en escucha:"
-ss -tulpn 2>/dev/null | grep -E ':(22|80|5000)' || echo "No se encontraron puertos conocidos"
-echo ""
-
-# Verificar reglas de firewall
-echo "🔥 Reglas de firewall (iptables):"
-iptables -L INPUT -n --line-numbers | grep -E "dpt:(22|80|5000)|ACCEPT.*tcp" | head -10 || echo "No se encontraron reglas"
-echo ""
-
-# Verificar contenedores Docker
-echo "🐳 Contenedores Docker:"
-docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No se pudieron listar contenedores"
-echo ""
-
-# Pruebas de conectividad
-echo "🧪 Pruebas de conectividad:"
-
-echo "   - Backend (localhost:5000):"
-curl -s -o /dev/null -w "     Status: %{http_code}\n" http://localhost:5000/api/health 2>/dev/null || echo "     ❌ Error al conectar al backend"
-
-echo "   - Frontend (localhost:80):"
-curl -s -o /dev/null -w "     Status: %{http_code}\n" http://localhost:80 2>/dev/null || echo "     ❌ Error al conectar al frontend"
-
-echo ""
-echo "✅ Verificación completada"
-echo ""
-
-# Verificar Oracle Cloud Security Lists
-echo "💡 RECORDATORIO: Asegúrate de que las Security Lists en Oracle Cloud tengan:"
-echo "   - Ingress Rule: 0.0.0.0/0 → TCP → Puerto 80 (Frontend)"
-echo "   - Ingress Rule: 0.0.0.0/0 → TCP → Puerto 5000 (Backend)"
-echo ""
-CHECK_EOF
-
-chmod +x check_ports.sh
-
-# Crear script de setup de variables
-cat > setup_env.sh << 'SETUP_EOF'
-#!/bin/bash
-
-# Script para configurar variables de entorno
-echo "🔧 Configurando variables de entorno..."
-
-cd /opt/webbibliotecaterra
-
-if [ ! -f .env ]; then
-    echo "📝 Creando archivo .env..."
-    cat > .env << 'ENV_CONFIG'
-# Configuración de WebBibliotecaTerra
-DOCKER_USER=tu_usuario_dockerhub
-SUPA_BASE_URL=tu_url_supabase
-SUPA_ANON_KEY=tu_anon_key_supabase
-JWT_SECRET=tu_jwt_secret
-ENV_CONFIG
-    
-    echo "⚠️  Por favor edita el archivo .env con tus variables reales:"
-    echo "    nano /opt/webbibliotecaterra/.env"
-else
-    echo "✅ Archivo .env ya existe"
-fi
-
-echo ""
-echo "📋 Variables actuales:"
-cat .env
-SETUP_EOF
-
-chmod +x setup_env.sh
-
-echo ""
-echo "✅ Configuración de cloud-init completada!"
-echo "📋 Próximos pasos:"
-echo "   1. SSH a la VM: ssh ubuntu@<IP_PUBLICA>"
-echo "   2. Configurar variables: cd /opt/webbibliotecaterra && ./setup_env.sh"
-echo "   3. Editar .env con tus valores reales: nano .env"
-echo "   4. Ejecutar despliegue: ./deploy.sh"
-echo "   5. Verificar: ./check_ports.sh"
+echo "✅ Docker y Docker Compose configurados con Backend y Frontend listos."
