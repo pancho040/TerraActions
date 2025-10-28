@@ -221,6 +221,13 @@ jobs:
             echo "🔍 Verificando estado de los servicios..."
             $DEPLOY_PATH/scripts/check_health.sh
 
+            # Abrir puertos según el tipo de contenedor
+            sudo $DEPLOY_PATH/scripts/open_ports.sh backend || true
+            sudo $DEPLOY_PATH/scripts/open_ports.sh frontend || true
+
+            # Ejecutar verificación de puertos y servicios
+            sudo $DEPLOY_PATH/scripts/check_ports.sh
+
       - name: Notificar despliegue exitoso por email
         if: success()
         uses: dawidd6/action-send-mail@v6
