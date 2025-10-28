@@ -1,6 +1,6 @@
 #!/bin/bash
-# Cloud-init para WebBibliotecaTerra: Docker + Docker Compose para Backend y Frontend
-# Ubuntu 22.04
+# Cloud-init para WebBibliotecaTerra: instalación de Docker y despliegue automático
+# Ubuntu 22.04 LTS
 
 # -----------------------------
 # 1. Actualizar paquetes base
@@ -9,7 +9,7 @@ sudo apt-get update -y
 sudo apt-get upgrade -y
 
 # -----------------------------
-# 2. Instalar Docker
+# 2. Instalar Docker y complementos
 # -----------------------------
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
 sudo mkdir -p /etc/apt/keyrings
@@ -17,8 +17,9 @@ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o 
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
 echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt-get update -y
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -43,10 +44,10 @@ sudo mkdir -p /opt/webbibliotecaterra
 sudo chown ubuntu:ubuntu /opt/webbibliotecaterra
 
 # -----------------------------
-# 6. Configurar Docker Compose
+# 6. Crear archivo docker-compose.yml dinámico
 # -----------------------------
-cat > /opt/webbibliotecaterra/docker-compose.yml <<'EOF'
-version: '3.8'
+cat > /opt/webbibliotecaterra/docker-compose.yml <<EOF
+version: "3.8"
 
 services:
   backend:
@@ -93,9 +94,9 @@ EOF
 sudo chown ubuntu:ubuntu /opt/webbibliotecaterra/docker-compose.yml
 
 # -----------------------------
-# 7. Crear systemd service para levantar contenedores al iniciar
+# 7. Crear servicio systemd para ejecución automática
 # -----------------------------
-sudo bash -c "cat > /etc/systemd/system/webbibliotecaterra.service <<'EOL'
+sudo bash -c 'cat > /etc/systemd/system/webbibliotecaterra.service <<EOL
 [Unit]
 Description=WebBibliotecaTerra Docker Compose Service
 After=network.target docker.service
@@ -111,14 +112,14 @@ TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
-EOL"
+EOL'
 
 sudo systemctl daemon-reexec
 sudo systemctl enable webbibliotecaterra.service
 sudo systemctl start webbibliotecaterra.service
 
 # -----------------------------
-# 8. Abrir puertos en el firewall de la VM
+# 8. Configurar firewall (iptables)
 # -----------------------------
 echo "🔧 Configurando firewall..."
 
@@ -142,4 +143,5 @@ sudo netfilter-persistent save
 # Mostrar reglas actuales
 sudo iptables -L INPUT -n --line-numbers
 
-echo "✅ Docker, Docker Compose y firewall configurados. Frontend en puerto 80 y Backend en 5000 listos."
+echo "✅ Instalación completa: Docker, Docker Compose y firewall configurados."
+echo "✅ Frontend disponible en puerto 80 y Backend en puerto 5000."
