@@ -217,15 +217,14 @@ jobs:
             echo "⏳ Esperando 20 segundos para que los servicios inicien..."
             sleep 20
 
-            # Ejecutar script de verificación
-            echo "🔍 Verificando estado de los servicios..."
+            # Ejecutar verificación de servicios
             $DEPLOY_PATH/scripts/check_health.sh
 
             # Abrir puertos según el tipo de contenedor
             sudo $DEPLOY_PATH/scripts/open_ports.sh backend || true
             sudo $DEPLOY_PATH/scripts/open_ports.sh frontend || true
 
-            # Ejecutar verificación de puertos y servicios
+            # Verificación final de puertos y servicios
             sudo $DEPLOY_PATH/scripts/check_ports.sh
 
       - name: Notificar despliegue exitoso por email
