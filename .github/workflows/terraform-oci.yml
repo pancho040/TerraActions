@@ -1,0 +1,62 @@
+name: Terraform OCI - WebBibliotecaTerra
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Write OCI private key to file
+        run: |
+          echo "${{ secrets.OCI_PRIVATE_KEY }}" > /tmp/oci_key.pem
+          chmod 600 /tmp/oci_key.pem
+
+      - name: Create ci-secrets.tfvars from GitHub Secrets
+        run: |
+          cat > infra/ci-secrets.tfvars <<EOF
+          tenancy_ocid = "${{ secrets.OCI_TENANCY_OCID }}"
+          user_ocid = "${{ secrets.OCI_USER_OCID }}"
+          fingerprint = "${{ secrets.OCI_FINGERPRINT }}"
+          private_key_path = "/tmp/oci_key.pem"
+          region = "${{ secrets.OCI_REGION }}"
+          compartment_ocid = "${{ secrets.OCI_COMPARTMENT_OCID }}"
+          subnet_id = "${{ secrets.OCI_SUBNET_ID }}"
+          availability_domain = "${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
+          ubuntu_2204_image_ocid = "${{ secrets.OCI_UBUNTU_IMAGE_OCID }}"
+          ssh_public_key = "${{ secrets.SSH_PUBLIC_KEY }}"
+          EOF
+
+      - name: Terraform init
+        working-directory: infra
+        run: terraform init
+
+      - name: Terraform validate
+        working-directory: infra
+        run: terraform validate
+
+      - name: Terraform plan
+        working-directory: infra
+        run: terraform plan -var-file="ci-secrets.tfvars" -out=tfplan
+
+      - name: Terraform apply
+        working-directory: infra
+        run: terraform apply -auto-approve -var-file="ci-secrets.tfvars" tfplan
+
+      - name: Show public IP
+        working-directory: infra
+        run: |
+          echo "Public IP of the VM:"
+          terraform output public_ip
