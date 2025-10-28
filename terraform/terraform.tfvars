@@ -6,7 +6,7 @@ region = "sa-saopaulo-1"
 compartment_ocid = "ocid1.tenancy.oc1..aaaaaaaackhu4xklmh4otvag6ehc5hdbfedzyltyzildbcodvwadheuje6ka"
 subnet_id = "ocid1.subnet.oc1.sa-saopaulo-1.aaaaaaaa25v2icuccnded3cv3u53pncgtwy27ftwwvmobymnabspvcw6kr6q"
 availability_domain = "idiK:SA-SAOPAULO-1-AD-1"
-ubuntu_2204_image_ocid = "ocid1.image.oc1.sa-saopaulo-1.aaaaaaaapi57wbgrd2xz5pppt2omxiwdp4su2jpv5gwlmxo2abkulz2oqh7a"
+ubuntu_image_ocid = "ocid1.image.oc1.sa-saopaulo-1.aaaaaaaapi57wbgrd2xz5pppt2omxiwdp4su2jpv5gwlmxo2abkulz2oqh7a"
 ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEpjZYB5ect+m9v9ySI2jxDyyl9OPqHfpFT3Ixkp6fyx mrf3005444@est.univalle.edu"
 instance_display_name = "webbiblioteca-vm-1"
 
