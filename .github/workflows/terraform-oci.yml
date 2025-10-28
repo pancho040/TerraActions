@@ -1,4 +1,4 @@
-name: Terraform OCI - WebBibliotecaTerra
+name: Terraform OCI - WebBibliotecaTerra Single VM
 
 on:
   push:
@@ -58,9 +58,24 @@ jobs:
         working-directory: infra
         run: terraform apply -auto-approve -var-file="ci-secrets.tfvars"
 
-      # 8. Mostrar IP pública
-      - name: Show public IP
+      # 8. Mostrar IP pública e instrucciones
+      - name: Show deployment info
         working-directory: infra
         run: |
-          echo "Public IP of the VM:"
-          terraform output public_ip
+          echo "🎉 Despliegue Terraform completado!"
+          echo ""
+          echo "📋 INSTRUCCIONES DE DESPLIEGUE:"
+          echo "Public IP: $(terraform output public_ip)"
+          echo ""
+          echo "1. Conectar a la VM:"
+          echo "   ssh ubuntu@$(terraform output public_ip)"
+          echo ""
+          echo "2. Configurar variables de entorno:"
+          echo "   cd /opt/webbibliotecaterra"
+          echo "   nano .env"
+          echo ""
+          echo "3. Ejecutar despliegue:"
+          echo "   ./deploy.sh"
+          echo ""
+          echo "4. Verificar:"
+          echo "   ./check_ports.sh"

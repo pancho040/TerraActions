@@ -25,8 +25,16 @@ resource "oci_core_instance" "ubuntu_vm" {
     user_data           = base64encode(data.template_file.cloud_init_script.rendered)
   }
 
-  # tags o freeform_tags si deseas
   freeform_tags = {
     project = "WebBibliotecaTerra"
   }
+}
+
+# Output para la IP pública
+output "public_ip" {
+  value = oci_core_instance.ubuntu_vm.public_ip
+}
+
+output "instance_id" {
+  value = oci_core_instance.ubuntu_vm.id
 }
