@@ -41,7 +41,6 @@ jobs:
             ./frontend
           docker push ${{ secrets.DOCKER_USER }}/webbiblioteca-frontend:latest
 
-
       - name: Docker Logout
         run: docker logout
 
@@ -187,14 +186,14 @@ jobs:
 
             # Crear archivo .env
             cat > $DEPLOY_PATH/.env << EOF
-            DOCKER_USER=${{ secrets.DOCKER_USER }}
-            PORT=5000
-            NODE_ENV=production
-            FRONTEND_URL=http://${{ needs.terraform-deploy.outputs.vm_public_ip }}
-            SUPA_BASE_URL=${{ secrets.SUPA_BASE_URL }}
-            SUPA_ANON_KEY=${{ secrets.SUPA_ANON_KEY }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            EOF
+                DOCKER_USER=${{ secrets.DOCKER_USER }}
+                PORT=5000
+                NODE_ENV=production
+                FRONTEND_URL=http://${{ needs.terraform-deploy.outputs.vm_public_ip }}
+                SUPA_BASE_URL=${{ secrets.SUPA_BASE_URL }}
+                SUPA_ANON_KEY=${{ secrets.SUPA_ANON_KEY }}
+                JWT_SECRET=${{ secrets.JWT_SECRET }}
+                EOF
 
             # Login a Docker Hub
             echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
@@ -222,12 +221,11 @@ jobs:
             echo "🔍 Verificando estado de los servicios..."
             $DEPLOY_PATH/scripts/check_health.sh
 
-            
       - name: Notificar despliegue exitoso por email
         if: success()
         uses: dawidd6/action-send-mail@v6
         with:
-          connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:587
+          connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
           subject: "✅ WebBiblioteca desplegada exitosamente"
           body: |
             🎉 La aplicación WebBiblioteca ha sido desplegada exitosamente!
@@ -238,8 +236,6 @@ jobs:
             
             🔧 Commit: ${{ github.sha }}
             👤 Por: ${{ github.actor }}
-            
-            ⏰ Desplegado el: ${{ github.event.head_commit.timestamp }}
           to: molinafranz943@gmail.com
           from: ${{ secrets.EMAIL_USER }}
 
@@ -247,20 +243,12 @@ jobs:
         if: failure()
         uses: dawidd6/action-send-mail@v6
         with:
-          connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:587
+          connection_url: smtp+starttls://${{ secrets.EMAIL_USER }}:${{ secrets.EMAIL_PASSWORD }}@smtp.gmail.com:465
           subject: "❌ Error en despliegue de WebBiblioteca"
           body: |
             ❌ El despliegue de WebBiblioteca ha fallado.
             
-            📋 Detalles del error:
-            - Repositorio: ${{ github.repository }}
-            - Commit: ${{ github.sha }}
-            - Ejecutado por: ${{ github.actor }}
-            - Workflow: ${{ github.workflow }}
-            
-            🔍 Por favor revisa los logs en GitHub Actions:
+            Por favor revisa los logs en GitHub Actions:
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            
-            🕒 Fecha del error: ${{ github.event.head_commit.timestamp }}
           to: molinafranz943@gmail.com
           from: ${{ secrets.EMAIL_USER }}
