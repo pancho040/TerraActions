@@ -41,6 +41,7 @@ jobs:
             ./frontend
           docker push ${{ secrets.DOCKER_USER }}/webbiblioteca-frontend:latest
 
+
       - name: Docker Logout
         run: docker logout
 
@@ -221,6 +222,7 @@ jobs:
             echo "🔍 Verificando estado de los servicios..."
             $DEPLOY_PATH/scripts/check_health.sh
 
+            
       - name: Notificar despliegue exitoso por email
         if: success()
         uses: dawidd6/action-send-mail@v6
