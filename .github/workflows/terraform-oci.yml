@@ -11,23 +11,19 @@ jobs:
     env:
       TF_IN_AUTOMATION: "true"
     steps:
-      # 1. Traer el código
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. Instalar Terraform
       - name: Setup Terraform CLI
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: "1.5.7"
 
-      # 3. Escribir la private key OCI desde secrets
       - name: Write OCI private key to file
         run: |
           echo "${{ secrets.OCI_PRIVATE_KEY }}" > /tmp/oci_key.pem
           chmod 600 /tmp/oci_key.pem
 
-      # 4. Crear archivo de variables temporal
       - name: Create ci-secrets.tfvars from GitHub Secrets
         run: |
           cat > infra/ci-secrets.tfvars <<EOF
@@ -41,42 +37,25 @@ jobs:
           availability_domain = "${{ secrets.OCI_AVAILABILITY_DOMAIN }}"
           ubuntu_2204_image_ocid = "${{ secrets.OCI_UBUNTU_IMAGE_OCID }}"
           ssh_public_key = "${{ secrets.SSH_PUBLIC_KEY }}"
+          instance_shape = "VM.Standard.E2.1.Micro"
+          instance_display_name = "webbiblioteca-vm-2"
           EOF
 
-      # 5. Inicializar Terraform
       - name: Terraform init
         working-directory: infra
         run: terraform init
 
-      # 6. Validar la configuración
       - name: Terraform validate
         working-directory: infra
         run: terraform validate
 
-      # 7. Aplicar Terraform
       - name: Terraform apply
         working-directory: infra
         run: terraform apply -auto-approve -var-file="ci-secrets.tfvars"
 
-      # 8. Mostrar información de la VM
       - name: Show deployment info
         working-directory: infra
         run: |
-          echo "🎉 Despliegue Terraform completado!"
-          echo ""
-          echo "📋 INSTRUCCIONES DE DESPLIEGUE:"
+          echo "🎉 Despliegue completado!"
           echo "Public IP: $(terraform output -raw public_ip)"
-          echo ""
-          echo "1. Conectar a la VM:"
-          echo "   ssh ubuntu@$(terraform output -raw public_ip)"
-          echo ""
-          echo "2. Configurar variables de entorno:"
-          echo "   cd /opt/webbibliotecaterra"
-          echo "   ./setup_env.sh"
-          echo "   nano .env  # Editar con tus valores reales"
-          echo ""
-          echo "3. Ejecutar despliegue:"
-          echo "   ./deploy.sh"
-          echo ""
-          echo "4. Verificar:"
-          echo "   ./check_ports.sh"
+          echo "SSH: ssh ubuntu@$(terraform output -raw public_ip)"

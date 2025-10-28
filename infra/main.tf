@@ -1,5 +1,3 @@
-# main.tf corregido para WebBibliotecaTerra con templatefile
-
 resource "oci_core_instance" "ubuntu_vm" {
   availability_domain = var.availability_domain
   shape               = var.instance_shape
@@ -15,12 +13,11 @@ resource "oci_core_instance" "ubuntu_vm" {
     subnet_id        = var.subnet_id
     assign_public_ip = true
     display_name     = "${var.instance_display_name}_vnic"
-    hostname_label   = "webbiblioteca-vm-2"
+    hostname_label   = "webbiblioteca-vm-3"
   }
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
-    # Usamos templatefile en lugar de template_file data source
     user_data           = base64encode(templatefile("${path.module}/cloud_init.sh", {}))
   }
 
@@ -29,13 +26,10 @@ resource "oci_core_instance" "ubuntu_vm" {
   }
 }
 
-# Outputs
 output "public_ip" {
-  value       = oci_core_instance.ubuntu_vm.public_ip
-  description = "Public IP de la VM Ubuntu"
+  value = oci_core_instance.ubuntu_vm.public_ip
 }
 
 output "instance_id" {
-  value       = oci_core_instance.ubuntu_vm.id
-  description = "OCID de la instancia Ubuntu"
+  value = oci_core_instance.ubuntu_vm.id
 }
