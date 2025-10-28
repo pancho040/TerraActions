@@ -1,6 +1,4 @@
-data "template_file" "cloud_init_script" {
-  template = file("${path.module}/cloud_init.sh")
-}
+# main.tf corregido para WebBibliotecaTerra
 
 resource "oci_core_instance" "ubuntu_vm" {
   availability_domain = var.availability_domain
@@ -22,7 +20,8 @@ resource "oci_core_instance" "ubuntu_vm" {
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
-    user_data           = data.template_file.cloud_init_script.rendered
+    # Ahora usamos directamente el archivo cloud_init.sh
+    user_data           = base64encode(file("${path.module}/cloud_init.sh"))
   }
 
   freeform_tags = {
@@ -30,11 +29,13 @@ resource "oci_core_instance" "ubuntu_vm" {
   }
 }
 
-# Output para la IP pública
+# Outputs
 output "public_ip" {
-  value = oci_core_instance.ubuntu_vm.public_ip
+  value       = oci_core_instance.ubuntu_vm.public_ip
+  description = "Public IP of the Ubuntu VM"
 }
 
 output "instance_id" {
-  value = oci_core_instance.ubuntu_vm.id
+  value       = oci_core_instance.ubuntu_vm.id
+  description = "OCID of the VM instance"
 }
