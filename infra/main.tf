@@ -22,7 +22,7 @@ resource "oci_core_instance" "ubuntu_vm" {
 
   metadata = {
     ssh_authorized_keys = var.ssh_public_key
-    user_data           = base64encode(data.template_file.cloud_init_script.rendered)
+    user_data           = data.template_file.cloud_init_script.rendered
   }
 
   freeform_tags = {

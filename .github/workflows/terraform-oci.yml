@@ -53,26 +53,27 @@ jobs:
         working-directory: infra
         run: terraform validate
 
-      # 7. Aplicar Terraform directamente con variables
+      # 7. Aplicar Terraform
       - name: Terraform apply
         working-directory: infra
         run: terraform apply -auto-approve -var-file="ci-secrets.tfvars"
 
-      # 8. Mostrar IP pública e instrucciones
+      # 8. Mostrar información de la VM
       - name: Show deployment info
         working-directory: infra
         run: |
           echo "🎉 Despliegue Terraform completado!"
           echo ""
           echo "📋 INSTRUCCIONES DE DESPLIEGUE:"
-          echo "Public IP: $(terraform output public_ip)"
+          echo "Public IP: $(terraform output -raw public_ip)"
           echo ""
           echo "1. Conectar a la VM:"
-          echo "   ssh ubuntu@$(terraform output public_ip)"
+          echo "   ssh ubuntu@$(terraform output -raw public_ip)"
           echo ""
           echo "2. Configurar variables de entorno:"
           echo "   cd /opt/webbibliotecaterra"
-          echo "   nano .env"
+          echo "   ./setup_env.sh"
+          echo "   nano .env  # Editar con tus valores reales"
           echo ""
           echo "3. Ejecutar despliegue:"
           echo "   ./deploy.sh"

@@ -56,7 +56,7 @@ mkdir -p /opt/webbibliotecaterra
 cd /opt/webbibliotecaterra
 
 # Crear archivo docker-compose.yml
-cat > docker-compose.yml << 'EOF'
+cat > docker-compose.yml << 'DOCKERCOMPOSE_EOF'
 version: '3.8'
 
 services:
@@ -90,10 +90,10 @@ services:
     restart: always
     depends_on:
       - backend
-EOF
+DOCKERCOMPOSE_EOF
 
 # Crear script de despliegue
-cat > deploy.sh << 'EOF'
+cat > deploy.sh << 'DEPLOY_EOF'
 #!/bin/bash
 
 # Script de despliegue para WebBibliotecaTerra
@@ -106,12 +106,12 @@ cd /opt/webbibliotecaterra
 # Crear archivo .env si no existe
 if [ ! -f .env ]; then
     echo "⚠️  Creando archivo .env desde variables de entorno..."
-    cat > .env << ENVEOF
-DOCKER_USER=${DOCKER_USER}
-SUPA_BASE_URL=${SUPA_BASE_URL}
-SUPA_ANON_KEY=${SUPA_ANON_KEY}
-JWT_SECRET=${JWT_SECRET}
-ENVEOF
+    cat > .env << ENV_EOF
+DOCKER_USER=\${DOCKER_USER}
+SUPA_BASE_URL=\${SUPA_BASE_URL}
+SUPA_ANON_KEY=\${SUPA_ANON_KEY}
+JWT_SECRET=\${JWT_SECRET}
+ENV_EOF
 fi
 
 # Limpiar contenedores antiguos
@@ -135,14 +135,14 @@ echo "📊 Estado de los contenedores:"
 docker-compose ps
 
 echo "✅ Despliegue completado!"
-echo "🌐 Frontend disponible en: http://$(curl -s ifconfig.me)"
-echo "🔧 Backend disponible en: http://$(curl -s ifconfig.me):5000"
-EOF
+echo "🌐 Frontend disponible en: http://\$(curl -s ifconfig.me)"
+echo "🔧 Backend disponible en: http://\$(curl -s ifconfig.me):5000"
+DEPLOY_EOF
 
 chmod +x deploy.sh
 
 # Crear script de verificación
-cat > check_ports.sh << 'EOF'
+cat > check_ports.sh << 'CHECK_EOF'
 #!/bin/bash
 
 # Script para verificar puertos y conectividad - Single VM
@@ -151,8 +151,8 @@ echo "🔍 Verificando configuración de WebBibliotecaTerra..."
 echo ""
 
 # Mostrar IP pública
-PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "No disponible")
-echo "🌐 IP Pública: $PUBLIC_IP"
+PUBLIC_IP=\$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "No disponible")
+echo "🌐 IP Pública: \$PUBLIC_IP"
 echo ""
 
 # Verificar puertos en escucha
@@ -188,14 +188,47 @@ echo "💡 RECORDATORIO: Asegúrate de que las Security Lists en Oracle Cloud te
 echo "   - Ingress Rule: 0.0.0.0/0 → TCP → Puerto 80 (Frontend)"
 echo "   - Ingress Rule: 0.0.0.0/0 → TCP → Puerto 5000 (Backend)"
 echo ""
-EOF
+CHECK_EOF
 
 chmod +x check_ports.sh
+
+# Crear script de setup de variables
+cat > setup_env.sh << 'SETUP_EOF'
+#!/bin/bash
+
+# Script para configurar variables de entorno
+echo "🔧 Configurando variables de entorno..."
+
+cd /opt/webbibliotecaterra
+
+if [ ! -f .env ]; then
+    echo "📝 Creando archivo .env..."
+    cat > .env << 'ENV_CONFIG'
+# Configuración de WebBibliotecaTerra
+DOCKER_USER=tu_usuario_dockerhub
+SUPA_BASE_URL=tu_url_supabase
+SUPA_ANON_KEY=tu_anon_key_supabase
+JWT_SECRET=tu_jwt_secret
+ENV_CONFIG
+    
+    echo "⚠️  Por favor edita el archivo .env con tus variables reales:"
+    echo "    nano /opt/webbibliotecaterra/.env"
+else
+    echo "✅ Archivo .env ya existe"
+fi
+
+echo ""
+echo "📋 Variables actuales:"
+cat .env
+SETUP_EOF
+
+chmod +x setup_env.sh
 
 echo ""
 echo "✅ Configuración de cloud-init completada!"
 echo "📋 Próximos pasos:"
 echo "   1. SSH a la VM: ssh ubuntu@<IP_PUBLICA>"
-echo "   2. Configurar variables de entorno en /opt/webbibliotecaterra/.env"
-echo "   3. Ejecutar: cd /opt/webbibliotecaterra && ./deploy.sh"
-echo "   4. Verificar: ./check_ports.sh"
+echo "   2. Configurar variables: cd /opt/webbibliotecaterra && ./setup_env.sh"
+echo "   3. Editar .env con tus valores reales: nano .env"
+echo "   4. Ejecutar despliegue: ./deploy.sh"
+echo "   5. Verificar: ./check_ports.sh"
