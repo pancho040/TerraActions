@@ -15,7 +15,7 @@ resource "oci_core_instance" "ubuntu_vm" {
     subnet_id        = var.subnet_id
     assign_public_ip = true
     display_name     = "${var.instance_display_name}_vnic"
-    hostname_label   = lower(replace(var.instance_display_name, "/[^a-z0-9-]/", "-"))
+    hostname_label   = "webbiblioteca-vm-2"
   }
 
   metadata = {
