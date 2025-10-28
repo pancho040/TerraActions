@@ -115,10 +115,63 @@ jobs:
           PUBLIC_IP=$(terraform output -raw public_ip)
           echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
 
-      - name: Esperar a que la VM esté lista
+      - name: Esperar a que cloud-init termine
         run: |
-          echo "⏳ Esperando 60 segundos para que la VM termine de inicializarse..."
-          sleep 60
+          echo "⏳ Esperando a que la VM termine la inicialización con cloud-init..."
+          VM_IP="${{ needs.terraform-deploy.outputs.vm_public_ip }}"
+          
+          # Crear clave SSH
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          
+          # Esperar a que SSH esté disponible
+          echo "🔌 Esperando a que SSH esté disponible..."
+          for i in {1..30}; do
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i ~/.ssh/id_ed25519 ubuntu@$VM_IP "echo 'SSH OK'" 2>/dev/null; then
+              echo "✅ SSH está disponible"
+              break
+            fi
+            echo "Intento $i/30: SSH no disponible aún..."
+            sleep 10
+          done
+          
+          # Esperar a que cloud-init termine completamente
+          echo "⏳ Esperando a que cloud-init termine..."
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ubuntu@$VM_IP << 'ENDSSH'
+            set -e
+            echo "Verificando estado de cloud-init..."
+            
+            # Esperar hasta 10 minutos (60 intentos x 10 segundos)
+            for i in {1..60}; do
+              if sudo cloud-init status --wait 2>/dev/null; then
+                echo "✅ cloud-init ha terminado"
+                break
+              fi
+              echo "Intento $i/60: cloud-init aún en progreso..."
+              sleep 10
+            done
+            
+            # Verificar que Docker esté instalado
+            if command -v docker &> /dev/null; then
+              echo "✅ Docker está instalado: $(docker --version)"
+            else
+              echo "❌ Docker no está instalado"
+              exit 1
+            fi
+            
+            # Verificar que el usuario tenga permisos de Docker
+            if groups | grep -q docker; then
+              echo "✅ Usuario 'ubuntu' está en el grupo docker"
+            else
+              echo "⚠️ Añadiendo usuario al grupo docker..."
+              sudo usermod -aG docker ubuntu
+            fi
+            
+            echo "✅ VM lista para despliegue"
+
+          
+          echo "✅ Inicialización completada, procediendo con el despliegue..."
 
   # Job 3: Configurar y desplegar contenedores en la VM
   deploy-containers:
