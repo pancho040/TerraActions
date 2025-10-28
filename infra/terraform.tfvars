@@ -9,3 +9,8 @@ availability_domain = "idiK:SA-SAOPAULO-1-AD-1"
 ubuntu_2204_image_ocid = "ocid1.image.oc1.sa-saopaulo-1.aaaaaaaapi57wbgrd2xz5pppt2omxiwdp4su2jpv5gwlmxo2abkulz2oqh7a"
 ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEpjZYB5ect+m9v9ySI2jxDyyl9OPqHfpFT3Ixkp6fyx mrf3005444@est.univalle.edu"
 instance_display_name = "webbiblioteca-vm-1"
+
+docker_user          = "pancho040"
+jwt_secret           = "cOso3+Oe3jGcSP7YRJAnHgOvMOv58PKfBaFijQYeDFQjH5T0PlDBQIYEES1tAKA/d1CjnRNymdUNAU0DKZnPdw=="
+supa_anon_key        = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFmY3RtZWtqYmhzbnRubnhiaXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3NjYzOTgsImV4cCI6MjA3MjM0MjM5OH0.HBMLnYTyQmu0flyz9aZs6FAWCMbozXlWJmkiH3YTnAc"
+supa_base_url        = "https://afctmekjbhsntnnxbirn.supabase.co"

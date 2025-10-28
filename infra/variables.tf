@@ -11,6 +11,12 @@ variable "ubuntu_2204_image_ocid" { type = string }
 
 variable "ssh_public_key" { type = string }
 
+variable "docker_user" { type = string }
+variable "jwt_secret"  { type = string }
+variable "supa_anon_key" { type = string }
+variable "supa_base_url" { type = string }
+
+
 # opcional: tamaño de la VM
 variable "instance_shape" {
   type    = string
