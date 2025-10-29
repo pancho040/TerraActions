@@ -199,7 +199,7 @@ jobs:
             sudo $DEPLOY_PATH/scripts/open_ports.sh backend || true
             sudo $DEPLOY_PATH/scripts/open_ports.sh frontend || true
 
-            # Verificación final de puertos y servicios
+            # Verificación final de puertos y servicio
             sudo $DEPLOY_PATH/scripts/check_ports.sh
 
 
