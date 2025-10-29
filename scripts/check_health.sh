@@ -18,7 +18,6 @@ echo "📦 Estado de los contenedores:"
 sudo docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "webbiblioteca|NAMES"
 echo ""
 
-
 # Verificar logs del backend
 echo "📝 Últimos logs del backend:"
 sudo docker logs --tail 20 webbiblioteca-backend 2>/dev/null || echo "❌ No se pudo obtener logs del backend"
