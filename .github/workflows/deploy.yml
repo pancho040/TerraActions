@@ -150,30 +150,27 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
+
             DEPLOY_PATH="/home/ubuntu/deploy"
             cd $DEPLOY_PATH
 
-            echo "⏳ Esperando a que otros procesos de apt terminen..."
+            # Esperar a que no haya procesos de apt ni locks activos
             MAX_RETRIES=12
             COUNT=0
             while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || ps aux | grep -E 'apt|dpkg' | grep -v grep >/dev/null 2>&1; do
-              COUNT=$((COUNT + 1))
-              if [ $COUNT -gt $MAX_RETRIES ]; then
-                echo "❌ Timeout esperando a que apt termine"
-                exit 1
-              fi
-              echo "⏳ Esperando 5 segundos más..."
-              sleep 5
+                COUNT=$((COUNT + 1))
+                if [ $COUNT -gt $MAX_RETRIES ]; then
+                    exit 1
+                fi
+                sleep 5
             done
 
             chmod +x scripts/*.sh
 
-            echo "🐳 Verificando instalación de Docker..."
             if ! command -v docker &> /dev/null; then
-              sudo $DEPLOY_PATH/scripts/setup_docker.sh
+                sudo $DEPLOY_PATH/scripts/setup_docker.sh
             fi
 
-            echo "⏳ Esperando a que Docker esté listo..."
             sleep 10
 
             cat > $DEPLOY_PATH/.env << EOF
@@ -188,22 +185,23 @@ jobs:
 
             echo "${{ secrets.DOCKER_PASSWORD }}" | sudo docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-            echo "🛑 Deteniendo contenedores existentes..."
             sudo docker compose -f $DEPLOY_PATH/docker-compose.yml down || true
-
-            echo "📥 Descargando imágenes actualizadas..."
             sudo docker compose -f $DEPLOY_PATH/docker-compose.yml pull
-
-            echo "🚀 Iniciando contenedores..."
             sudo docker compose -f $DEPLOY_PATH/docker-compose.yml up -d --force-recreate
-
             sudo docker logout
 
-            echo "⏳ Esperando 20 segundos para que los servicios inicien..."
             sleep 20
 
-            echo "🔍 Verificando estado de los servicios..."
+            # Ejecutar verificación de servicios
             $DEPLOY_PATH/scripts/check_health.sh
+
+            # Abrir puertos según el tipo de contenedor
+            sudo $DEPLOY_PATH/scripts/open_ports.sh backend || true
+            sudo $DEPLOY_PATH/scripts/open_ports.sh frontend || true
+
+            # Verificación final de puertos y servicios
+            sudo $DEPLOY_PATH/scripts/check_ports.sh
+
 
       - name: Notificar despliegue exitoso por email
         if: success()
