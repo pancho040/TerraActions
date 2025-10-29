@@ -7,6 +7,7 @@ echo "   VERIFICACIÓN DE DESPLIEGUE"
 echo "========================================="
 echo ""
 
+
 # Obtener IP pública
 PUBLIC_IP=$(curl -s ifconfig.me 2>/dev/null || curl -s icanhazip.com 2>/dev/null || echo "No disponible")
 echo "🌐 IP Pública: $PUBLIC_IP"
