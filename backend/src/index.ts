@@ -58,7 +58,7 @@ app.use('/api/LA', libroAutorRouter);
 
 console.log("Ruta /api/stock cargada correctamente");
 
-// Ruta de health check
+
 app.get('/api', (_req, res) => {
   res.json({ 
     message: "Hola desde Express!",
@@ -67,7 +67,7 @@ app.get('/api', (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-
+// Ruta de health check
 app.get('/api/health', (_req, res) => {
   res.json({ 
     status: 'healthy',
