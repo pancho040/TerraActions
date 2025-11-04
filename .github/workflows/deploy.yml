@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Job 1: Obtener IP antes de construir imágenes
+  # Job  1: Obtener IP antes de construir imágenes
   get-infrastructure:
     name: Get or Create Infrastructure
     runs-on: ubuntu-latest
