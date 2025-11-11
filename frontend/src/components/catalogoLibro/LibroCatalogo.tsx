@@ -39,6 +39,7 @@ const LibroCatalogo: FC = () => {
       }
     };
 
+
     cargarDatosIniciales();
   }, []);
 
@@ -53,7 +54,7 @@ const LibroCatalogo: FC = () => {
           try {
             librosFiltrados = await LibroService.getByTitulo(filtroTitulo);
             if (librosFiltrados.length === 0) {
-              setError(`No se encontraron libros con el título "${filtroTitulo}"`);
+              setError(`No se encontraron libros con el título 11/11 "${filtroTitulo}"`);
             }
           } catch (err) {
             if (err instanceof Error && err.message.includes('404')) {
